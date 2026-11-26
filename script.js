@@ -807,10 +807,14 @@ window.addEventListener(
 );
 
 
+
 /* ==================================
    10. EMAIL FUNCTIONALITY
-   Google Apps Script — future setup
+   Google Apps Script
 ================================== */
+
+const GOOGLE_SCRIPT_URL =
+    'https://script.google.com/macros/s/AKfycbxgjI-kRFOtXA-vtgNA4EMtd2RD_f1VNjsh4MLZaVU3Af5C-Igr4F3yLsvsJ3cYjyye/exec';
 
 document.getElementById('email')
     .addEventListener('click', () => {
@@ -824,21 +828,100 @@ document.getElementById('email')
         if (!input.value.trim() || !input.checkValidity()) {
 
             status.textContent = language === 'en'
-
                 ? 'Please enter a valid recipient email address.'
-
                 : 'Adj meg egy érvényes e-mail-címet.';
 
             return;
         }
 
+        const formData = new FormData(form);
+
+        const payload = {
+
+            email: input.value.trim(),
+
+            language: language,
+
+            wine: String(formData.get('wine') || ''),
+
+            occasion: String(formData.get('occasion') || ''),
+
+            sections: sections.map(s => ({
+
+                id: s.id,
+
+                title: tr(s.title),
+
+                fields: s.fields.map(f => {
+
+                    const values = formData
+                        .getAll(f.id)
+                        .map(value => {
+
+                            if (f.options) {
+                                return tr(
+                                    f.options[Number(value)]
+                                );
+                            }
+
+                            return String(value).trim();
+
+                        })
+                        .filter(Boolean);
+
+                    return {
+
+                        id: f.id,
+
+                        label: tr(f.label),
+
+                        value: values.join(', ')
+
+                    };
+
+                }).filter(f => f.value)
+
+            }))
+
+        };
+
+        const requestForm =
+            document.createElement('form');
+
+        requestForm.method = 'POST';
+
+        requestForm.action = GOOGLE_SCRIPT_URL;
+
+        requestForm.target = '_blank';
+
+        requestForm.style.display = 'none';
+
+        const payloadInput =
+            document.createElement('input');
+
+        payloadInput.type = 'hidden';
+
+        payloadInput.name = 'payload';
+
+        payloadInput.value =
+            JSON.stringify(payload);
+
+        requestForm.appendChild(payloadInput);
+
+        document.body.appendChild(requestForm);
+
+        requestForm.submit();
+
+        requestForm.remove();
+
         status.textContent = language === 'en'
 
-            ? 'Email delivery is not configured yet. Save the PDF for now.'
+            ? 'Check the opened window for delivery confirmation.'
 
-            : 'Az e-mail-küldés még nincs beállítva. Egyelőre mentsd a PDF-et.';
+            : 'A küldés eredményét a megnyíló ablakban ellenőrizheted.';
 
     });
+
 
     /* ==================================
    11. OTHER WINE TYPE
